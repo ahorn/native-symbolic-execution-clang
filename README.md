@@ -115,7 +115,7 @@ C++ parser is notoriously hard. So as opposed to creating our own, we use
 Clang -- Apple's compiler of choice.
 
 The CRV front-end is built on [LibASTMatchers][clang-ast-matchers] which
-provides a domain-specific language to Clang's abstract syntax tree (AST).
+provide a domain-specific language to Clang's abstract syntax tree (AST).
 Clang's AST is very rich and many corner cases are not considered by the
 CRV front-end. This is purely for practical reasons and is not due to any
 intrinsic limitations of Clang. Any contributions to fix issues are warmly
