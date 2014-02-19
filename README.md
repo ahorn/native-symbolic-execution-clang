@@ -195,8 +195,8 @@ writing and testing AST matchers. The following illustrates this:
     ^~~~~~~~~~~~
     2 matches.
 
-Thirdly, there is a lot of [clang-doc][documentation] including
-the  [clang-ast-matchers-ref][AST Matcher Reference]. When in doubt
+Thirdly, there is a lot of [documentation][clang-doc] including
+the [AST Matcher Reference][clang-ast-matchers-ref]. When in doubt
 how to use the various kinds of matchers, the source code of
 [clang-modernize][clang-modernize] is good starting point.
 
