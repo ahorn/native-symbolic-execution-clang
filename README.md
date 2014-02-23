@@ -1,16 +1,15 @@
 # Clang CRV Front-end 
 
-This is the front-end to [CRV][crv], a research project into fast
-symbolic execution of sequential and concurrent C++11 code.
+This is the front-end to CRV, a research project into fast symbolic execution
+of sequential and concurrent C++11 code. CRV consists of two parts: an
+instrumentation module and a [runtime library][crv].
 
-Unlike tools such as [KLEE][klee] or [CBMC][cbmc], CRV is a library that
-must be first linked with the program under scrutiny. This design allows
-CRV to leverage advanced C++11 features to symbolically execute code efficiently.
-Efficiency is particularly important for things such as constant propagation,
-a well-known technique for simplifying symbolic expressions at runtime. This
-can give [performance gains][performance-tests] of several orders of magnitude
-(e.g. up to a million times faster) but requires certain source-to-source
-transformations of the user's program.
+This design allows CRV to leverage advanced C++11 features to symbolically
+execute code efficiently. Efficiency is particularly important for things
+such as constant propagation, a well-known technique for simplifying symbolic
+expressions at runtime. This can give [performance gains][performance-tests]
+of several orders of magnitude (e.g. up to a million times faster) but
+requires certain source-to-source transformations of the user's program.
 
 This is where the CRV frond-end comes in: it takes as input a C++11 program
 that the user wants to symbolically execute. Given such a program, the
@@ -23,8 +22,6 @@ If you would like to get involved, feel free to get in touch!
 
 [crv]: https://github.com/ahorn/smt-kit#crv-symbolic-execution
 [performance-tests]: https://github.com/ahorn/smt-kit/blob/master/test/crv_performance_test.cpp
-[klee]: http://klee.github.io/klee/
-[cbmc]: http://www.cprover.org/cbmc/
 
 ## Install
 
