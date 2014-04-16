@@ -2,7 +2,7 @@
 
 This is the front-end to CRV, a research project into fast symbolic execution
 of sequential and concurrent C++11 code. CRV consists of two parts: an
-instrumentation module and a [runtime library][crv].
+instrumentation module and a [runtime library][nse].
 
 This design allows CRV to leverage advanced C++11 features to symbolically
 execute code efficiently. Efficiency is particularly important for things
@@ -20,7 +20,7 @@ with Clang's [LibASTMatchers][clang-ast-matchers] library.
 CRV and the front-end evolve together and there is still more work to be done.
 If you would like to get involved, feel free to get in touch!
 
-[crv]: https://github.com/ahorn/smt-kit#crv-symbolic-execution
+[nse]: https://github.com/ahorn/smt-kit#native-symbolic-execution
 [performance-tests]: https://github.com/ahorn/smt-kit/blob/master/test/crv_performance_test.cpp
 
 ## Install
