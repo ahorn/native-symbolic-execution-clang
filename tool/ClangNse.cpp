@@ -1,4 +1,4 @@
-//===-- ClangCrv.cpp - Main file for the Clang CRV instrumentation tool ---===//
+//===-- ClangNse.cpp - Main file for the Clang CRV instrumentation tool ---===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -19,16 +19,16 @@
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/Signals.h"
 
-#include "CrvTransform.h"
+#include "NseTransform.h"
 
 namespace cl = llvm::cl;
 
-static cl::OptionCategory CrvOptionCategory("crv options");
+static cl::OptionCategory NseOptionCategory("nse options");
 
 int main(int argc, const char **argv) {
   llvm::sys::PrintStackTraceOnErrorSignal();
 
-  tooling::CommonOptionsParser OptionsParser(argc, argv, CrvOptionCategory);
+  tooling::CommonOptionsParser OptionsParser(argc, argv, NseOptionCategory);
   tooling::RefactoringTool Tool(OptionsParser.getCompilations(),
     OptionsParser.getSourcePathList());
 
@@ -53,5 +53,5 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
   Finder.addMatcher(makeIncrementMatcher(), &Increments);
 
-  return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM));
+  return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM).get());
 }

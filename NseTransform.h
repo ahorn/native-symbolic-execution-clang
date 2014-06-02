@@ -48,7 +48,7 @@ struct IncludesManager : public tooling::SourceFileCallbacks {
   IncludeDirectives* Includes;
 
   virtual bool handleBeginSource(CompilerInstance &CI, StringRef Filename)
-      LLVM_OVERRIDE;
+      override;
 };
 
 class IfConditionReplacer : public MatchFinder::MatchCallback {
@@ -57,7 +57,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -66,7 +66,7 @@ private:
 class IfConditionVariableReplacer : public MatchFinder::MatchCallback {
 public :
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 };
 
 class ForConditionReplacer : public MatchFinder::MatchCallback {
@@ -75,7 +75,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -87,7 +87,7 @@ public :
       : Replace(Replace), IM(IM) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -100,7 +100,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -112,7 +112,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -124,7 +124,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;
@@ -136,7 +136,7 @@ public :
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
-      LLVM_OVERRIDE;
+      override;
 
 private:
   tooling::Replacements *Replace;

@@ -1,4 +1,4 @@
-##===- tools/extra/clang-crv/tool/Makefile -----------------*- Makefile -*-===##
+##===- tools/extra/native-symbolic-execution-clang/tool/Makefile ----------===##
 #
 #                     The LLVM Compiler Infrastructure
 #
@@ -10,15 +10,15 @@
 CLANG_LEVEL := ../../../..
 include $(CLANG_LEVEL)/../../Makefile.config
 
-TOOLNAME = clang-crv
+TOOLNAME = clang-nse
 
 # No plugins, optimize startup time.
 TOOL_NO_EXPORTS = 1
 
-SOURCES = ClangCrv.cpp
+SOURCES = ClangNse.cpp
 
 LINK_COMPONENTS := $(TARGETS_TO_BUILD) asmparser bitreader support mc mcparser option
-USEDLIBS = crv.a modernizeCore.a clangFormat.a clangTooling.a clangFrontend.a \
+USEDLIBS = nse.a modernizeCore.a clangFormat.a clangTooling.a clangFrontend.a \
 	   clangSerialization.a clangDriver.a clangRewriteFrontend.a \
 	   clangRewriteCore.a clangParse.a clangSema.a clangAnalysis.a \
 	   clangAST.a clangASTMatchers.a clangEdit.a clangLex.a clangBasic.a

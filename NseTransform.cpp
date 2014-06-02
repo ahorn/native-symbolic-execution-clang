@@ -2,10 +2,10 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
-#include "CrvTransform.h"
+#include "NseTransform.h"
 
-const char *CrvInternalClassName = "crv::Internal<";
-const char *CrvExternalClassName = "crv::External<";
+const char *NseInternalClassName = "crv::Internal<";
+const char *NseExternalClassName = "crv::External<";
 
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
@@ -107,7 +107,7 @@ void ForConditionReplacer::run(const MatchFinder::MatchResult &Result) {
 }
 
 // TODO: Fix buffer corruption issue, perhaps use clang-apply-replacements?
-void addCrvHeader(
+void addNseHeader(
   const FileEntry *File,
   tooling::Replacements &Replace,
   IncludeDirectives &Includes) {
@@ -141,10 +141,10 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(CrvInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
 
   //const FileEntry *File = SM.getFileEntryForID(SM.getFileID(TL.getBeginLoc()));
-  //addCrvHeader(File, *Replace, *IM->Includes);
+  //addNseHeader(File, *Replace, *IM->Includes);
 }
 
 void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -155,7 +155,7 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(CrvExternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseExternalClassName, TL.getSourceRange(), SM, *Replace);
 }
 
 // Replaces currently only integral parameters passed by value
@@ -165,7 +165,7 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(CrvInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
 }
 
 void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -179,7 +179,7 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
     IgnoreParens().castAs<FunctionProtoTypeLoc>().getReturnLoc();
 
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(CrvInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
 }
 
 void IncrementReplacer::run(const MatchFinder::MatchResult &Result) {

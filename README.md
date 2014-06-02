@@ -74,7 +74,7 @@ int main() {
 To see the effects of the source-to-source transformation,
 execute the following commands:
 
-    $ /path/to/native-symbolic-execution-clang example.cpp --
+    $ /path/to/clang-nse example.cpp --
     $ cat example.cpp
 
 The output looks as follows:

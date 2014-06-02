@@ -1,4 +1,4 @@
-##===- tools/extra/clang-crv/Makefile ----------------------*- Makefile -*-===##
+##===- tools/extra/native-symbolic-execution-clang/Makefile----------------===##
 #
 #                     The LLVM Compiler Infrastructure
 #
@@ -7,7 +7,7 @@
 #
 ##===----------------------------------------------------------------------===##
 CLANG_LEVEL := ../../..
-LIBRARYNAME := crv
+LIBRARYNAME := nse
 
 DIRS = tool
 
