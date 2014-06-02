@@ -39,9 +39,9 @@ For convenience, here is a possible way to build the project:
     $ cd ../../../..
     $ mkdir -p build/target
     $ cd llvm/tools/clang/tools/extra
-    $ git clone https://github.com/ahorn/clang-crv.git
-    $ echo "DIRS += clang-crv" >> Makefile
-    $ echo "add_subdirectory(clang-crv)" >> CMakeLists.txt
+    $ git clone https://github.com/ahorn/native-symbolic-execution-clang.git
+    $ echo "DIRS += native-symbolic-execution-clang" >> Makefile
+    $ echo "add_subdirectory(native-symbolic-execution-clang)" >> CMakeLists.txt
     $ cd ../../../../../build
     $ ../llvm/configure --prefix=`pwd`/target
     $ make
@@ -74,7 +74,7 @@ int main() {
 To see the effects of the source-to-source transformation,
 execute the following commands:
 
-    $ /path/to/clang-crv example.cpp --
+    $ /path/to/native-symbolic-execution-clang example.cpp --
     $ cat example.cpp
 
 The output looks as follows:
