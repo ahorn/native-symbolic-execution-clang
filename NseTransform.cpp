@@ -2,6 +2,7 @@
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/AST/ASTContext.h"
 #include "NseTransform.h"
 
 const char *NseInternalClassName = "crv::Internal<";
@@ -60,9 +61,7 @@ DeclarationMatcher makeMainFunctionMatcher() {
 }
 
 DeclarationMatcher makeParmVarDeclMatcher() {
-  return parmVarDecl(
-    hasType(
-      isInteger())).bind(ParmVarBindId);
+  return parmVarDecl().bind(ParmVarBindId);
 }
 
 DeclarationMatcher makeReturnTypeMatcher() {
@@ -81,10 +80,11 @@ void instrumentControlFlow(
   const std::string& NseBranchStrategy,
   SourceRange SR,
   SourceManager &SM,
+  const LangOptions &LO,
   tooling::Replacements &R) {
 
   CharSourceRange Range = Lexer::makeFileCharRange(
-      CharSourceRange::getTokenRange(SR), SM, LangOptions());
+      CharSourceRange::getTokenRange(SR), SM, LO);
 
   R.insert(tooling::Replacement(SM, Range.getBegin(), 0, NseBranchStrategy + "("));
   R.insert(tooling::Replacement(SM, Range.getEnd(), 0, ")"));
@@ -96,7 +96,8 @@ void IfConditionReplacer::run(const MatchFinder::MatchResult &Result) {
 
   SourceManager &SM = *Result.SourceManager;
   SourceRange Range = E->getSourceRange();
-  instrumentControlFlow(NseBranchStrategy, Range, SM, *Replace);
+  instrumentControlFlow(NseBranchStrategy, Range, SM,
+    Result.Context->getLangOpts(), *Replace);
 }
 
 void IfConditionVariableReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -108,7 +109,8 @@ void ForConditionReplacer::run(const MatchFinder::MatchResult &Result) {
   assert(E && "Bad Callback. No node provided");
 
   SourceManager &SM = *Result.SourceManager;
-  instrumentControlFlow(NseBranchStrategy, E->getSourceRange(), SM, *Replace);
+  instrumentControlFlow(NseBranchStrategy, E->getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
 }
 
 // TODO: Fix buffer corruption issue, perhaps use clang-apply-replacements?
@@ -123,17 +125,39 @@ void addNseHeader(
   }
 }
 
-void instrumentVarDecl(
-  StringRef crvClass,
+void internalInstrumentVarDecl(
+  StringRef NseClassPrefix,
+  StringRef NseClassSuffix,
   SourceRange SR,
   SourceManager &SM,
+  const LangOptions &LO,
   tooling::Replacements &Replace) {
 
   CharSourceRange Range = Lexer::makeFileCharRange(
-      CharSourceRange::getTokenRange(SR), SM, LangOptions());
+      CharSourceRange::getTokenRange(SR), SM, LO);
 
-  Replace.insert(tooling::Replacement(SM, Range.getBegin(), 0, crvClass));
-  Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, ">"));
+  Replace.insert(tooling::Replacement(SM, Range.getBegin(), 0, NseClassPrefix));
+  Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, NseClassSuffix));
+}
+
+void instrumentVarDecl(
+  StringRef NseClass,
+  SourceRange SR,
+  SourceManager &SM,
+  const LangOptions &LO,
+  tooling::Replacements &Replace) {
+
+  return internalInstrumentVarDecl(NseClass, ">", SR, SM, LO, Replace);
+}
+
+void instrumentVarDeclAsRef(
+  StringRef NseClass,
+  SourceRange SR,
+  SourceManager &SM,
+  const LangOptions &LO,
+  tooling::Replacements &Replace) {
+
+  return internalInstrumentVarDecl(NseClass, ">&", SR, SM, LO, Replace);
 }
 
 void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -146,7 +170,8 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
 
   //const FileEntry *File = SM.getFileEntryForID(SM.getFileID(TL.getBeginLoc()));
   //addNseHeader(File, *Replace, *IM->Includes);
@@ -162,7 +187,8 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
 }
 
 void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -191,14 +217,21 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
   Replace->insert(tooling::Replacement(SM, BodyLocBegin, 0, MakeAnys));
 }
 
-// Replaces currently only integral parameters passed by value
+// Passes integral parameters passed by value and other types by reference
 void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const ParmVarDecl *D = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
   assert(D && "Bad Callback. No node provided");
 
+  QualType QT = D->getType();
   TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
+
+  if (QT->isIntegerType())
+    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
+  else
+    instrumentVarDeclAsRef(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
 }
 
 void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -212,7 +245,8 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
     IgnoreParens().castAs<FunctionProtoTypeLoc>().getReturnLoc();
 
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
 }
 
 void IncrementReplacer::run(const MatchFinder::MatchResult &Result) {
