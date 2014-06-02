@@ -5,7 +5,6 @@
 #include "NseTransform.h"
 
 const char *NseInternalClassName = "crv::Internal<";
-const char *NseExternalClassName = "crv::External<";
 
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
@@ -79,6 +78,7 @@ StatementMatcher makeIncrementMatcher() {
 }
 
 void instrumentControlFlow(
+  const std::string& NseBranchStrategy,
   SourceRange SR,
   SourceManager &SM,
   tooling::Replacements &R) {
@@ -86,7 +86,7 @@ void instrumentControlFlow(
   CharSourceRange Range = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(SR), SM, LangOptions());
 
-  R.insert(tooling::Replacement(SM, Range.getBegin(), 0, "crv::tracer().decide_flip("));
+  R.insert(tooling::Replacement(SM, Range.getBegin(), 0, NseBranchStrategy + "("));
   R.insert(tooling::Replacement(SM, Range.getEnd(), 0, ")"));
 }
 
@@ -96,7 +96,7 @@ void IfConditionReplacer::run(const MatchFinder::MatchResult &Result) {
 
   SourceManager &SM = *Result.SourceManager;
   SourceRange Range = E->getSourceRange();
-  instrumentControlFlow(Range, SM, *Replace);
+  instrumentControlFlow(NseBranchStrategy, Range, SM, *Replace);
 }
 
 void IfConditionVariableReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -108,7 +108,7 @@ void ForConditionReplacer::run(const MatchFinder::MatchResult &Result) {
   assert(E && "Bad Callback. No node provided");
 
   SourceManager &SM = *Result.SourceManager;
-  instrumentControlFlow(E->getSourceRange(), SM, *Replace);
+  instrumentControlFlow(NseBranchStrategy, E->getSourceRange(), SM, *Replace);
 }
 
 // TODO: Fix buffer corruption issue, perhaps use clang-apply-replacements?
@@ -162,7 +162,7 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
-  instrumentVarDecl(NseExternalClassName, TL.getSourceRange(), SM, *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM, *Replace);
 }
 
 void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {

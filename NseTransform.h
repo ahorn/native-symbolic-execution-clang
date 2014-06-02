@@ -16,7 +16,6 @@ using namespace clang;
 using namespace clang::ast_matchers;
 
 extern const char *CrvInternalClassName;
-extern const char *CrvExternalClassName;
 
 extern const char *IfConditionBindId;
 extern const char *IfConditionVariableBindId;
@@ -61,13 +60,17 @@ struct IncludesManager : public tooling::SourceFileCallbacks {
 
 class IfConditionReplacer : public MatchFinder::MatchCallback {
 public :
-  IfConditionReplacer(tooling::Replacements *Replace)
-      : Replace(Replace) {}
+  IfConditionReplacer(
+    const std::string& NseBranchStrategy,
+    tooling::Replacements *Replace)
+      : NseBranchStrategy(NseBranchStrategy),
+        Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
 private:
+  const std::string& NseBranchStrategy;
   tooling::Replacements *Replace;
 };
 
@@ -79,13 +82,17 @@ public :
 
 class ForConditionReplacer : public MatchFinder::MatchCallback {
 public :
-  ForConditionReplacer(tooling::Replacements *Replace)
-      : Replace(Replace) {}
+  ForConditionReplacer(
+    const std::string& NseBranchStrategy,
+    tooling::Replacements *Replace)
+      : NseBranchStrategy(NseBranchStrategy),
+        Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
 private:
+  const std::string& NseBranchStrategy;
   tooling::Replacements *Replace;
 };
 

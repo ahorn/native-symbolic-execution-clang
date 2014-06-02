@@ -23,7 +23,25 @@
 
 namespace cl = llvm::cl;
 
-static cl::OptionCategory NseOptionCategory("nse options");
+static cl::OptionCategory NseOptionCategory("Native symbolic execution options");
+
+static cl::opt<std::string> NamespaceOpt(
+  "namespace",
+  cl::init("crv"),
+  cl::desc("C++ namespace of the NSE library (default=crv)."),
+  cl::cat(NseOptionCategory));
+
+static cl::opt<std::string> BranchOpt(
+  "branch",
+  cl::init("branch"),
+  cl::desc("Name of the function that is called on control-flow statements (default=branch)."),
+  cl::cat(NseOptionCategory));
+
+static cl::opt<std::string> StrategyOpt(
+  "strategy",
+  cl::init("sequential_dfs_checker"),
+  cl::desc("Extern function that determines the symbolic execution path search strategy (default=sequential_dfs_checker)."),
+  cl::cat(NseOptionCategory));
 
 int main(int argc, const char **argv) {
   llvm::sys::PrintStackTraceOnErrorSignal();
@@ -32,11 +50,14 @@ int main(int argc, const char **argv) {
   tooling::RefactoringTool Tool(OptionsParser.getCompilations(),
     OptionsParser.getSourcePathList());
 
+  // fully qualified function name without parenthesis
+  const std::string NseBranchStrategy = NamespaceOpt + "::" + StrategyOpt + "()." + BranchOpt;
+
   IncludesManager IM;
   tooling::Replacements *Replace = &Tool.getReplacements();
-  IfConditionReplacer IfStmts(Replace);
+  IfConditionReplacer IfStmts(NseBranchStrategy, Replace);
   IfConditionVariableReplacer IfConditionVariableStmts;
-  ForConditionReplacer ForStmts(Replace);
+  ForConditionReplacer ForStmts(NseBranchStrategy, Replace);
   LocalVarReplacer LocalVarDecls(Replace, &IM);
   GlobalVarReplacer GlobalVarDecls(Replace);
   MainFunctionReplacer MainFunction(Replace, &GlobalVarDecls.GlobalVars);
