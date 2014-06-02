@@ -12,6 +12,7 @@ const char *IfConditionVariableBindId = "if_condition_variable";
 const char *ForConditionBindId = "for_condition";
 const char *LocalVarBindId = "internal_decl";
 const char *GlobalVarBindId = "external_decl";
+const char *MainFunctionBindId = "main_function";
 const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
 const char *IncrementBindId = "post_increment";
@@ -53,6 +54,10 @@ DeclarationMatcher makeGlobalVarMatcher() {
   return varDecl(
     hasType(
       isInteger())).bind(GlobalVarBindId);
+}
+
+DeclarationMatcher makeMainFunctionMatcher() {
+  return functionDecl(hasName("main")).bind(MainFunctionBindId);
 }
 
 DeclarationMatcher makeParmVarDeclMatcher() {
@@ -153,9 +158,37 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   if (!V->hasGlobalStorage())
     return;
 
+  GlobalVars.push_back(V->getName().str());
+
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   SourceManager &SM = *Result.SourceManager;
   instrumentVarDecl(NseExternalClassName, TL.getSourceRange(), SM, *Replace);
+}
+
+void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
+  const FunctionDecl *D = Result.Nodes.getNodeAs<FunctionDecl>(MainFunctionBindId);
+  assert(D && "Bad Callback. No node provided");
+  assert(GlobalVars && "GlobalVars is NULL");
+
+  SourceManager &SM = *Result.SourceManager;
+  SourceLocation NameLocBegin = D->getNameInfo().getBeginLoc();
+
+  Replace->insert(tooling::Replacement(SM, NameLocBegin, 4, "nse_main"));
+
+  if (!D->hasBody())
+    return;
+
+  DEBUG(llvm::errs() << "MainFunctionReplacer: " << GlobalVars->size()
+                     << " global variables" << "\n");
+
+  Stmt *FuncBody = D->getBody();
+  SourceLocation BodyLocBegin = FuncBody->getLocStart().getLocWithOffset(1);
+  std::string MakeAnys = "\n";
+  for (const std::string& GlobalVar : *GlobalVars)
+  {
+    MakeAnys += "  crv::make_any(" + GlobalVar + ");\n";
+  }
+  Replace->insert(tooling::Replacement(SM, BodyLocBegin, 0, MakeAnys));
 }
 
 // Replaces currently only integral parameters passed by value

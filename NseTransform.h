@@ -1,7 +1,13 @@
+#define DEBUG_TYPE "NseTransform"
+
+#include "llvm/Support/Debug.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Tooling/Refactoring.h"
 #include "IncludeDirectives.h"
+
+#include <string>
+#include <vector>
 
 #ifndef CLANG_CRV_TRANSFORM_H
 #define CLANG_CRV_TRANSFORM_H
@@ -17,6 +23,7 @@ extern const char *IfConditionVariableBindId;
 extern const char *ForConditionBindId;
 extern const char *LocalVarBindId;
 extern const char *GlobalVarBindId;
+extern const char *MainFunctionBindId;
 extern const char *FieldBindId;
 extern const char *ParmVarBindId;
 extern const char *ReturnTypeBindId;
@@ -27,6 +34,7 @@ StatementMatcher makeIfConditionVariableMatcher();
 StatementMatcher makeForConditionMatcher();
 StatementMatcher makeLocalVarMatcher();
 DeclarationMatcher makeGlobalVarMatcher();
+DeclarationMatcher makeMainFunctionMatcher();
 DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
 StatementMatcher makeIncrementMatcher();
@@ -97,13 +105,28 @@ private:
 class GlobalVarReplacer : public MatchFinder::MatchCallback {
 public :
   GlobalVarReplacer(tooling::Replacements *Replace)
-      : Replace(Replace) {}
+      : GlobalVars(), Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+  std::vector<std::string> GlobalVars;
+
+private:
+  tooling::Replacements *Replace;
+};
+
+class MainFunctionReplacer : public MatchFinder::MatchCallback {
+public :
+  MainFunctionReplacer(tooling::Replacements *Replace, std::vector<std::string> *GlobalVars)
+      : Replace(Replace), GlobalVars(GlobalVars) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
 private:
   tooling::Replacements *Replace;
+  std::vector<std::string> *GlobalVars;
 };
 
 class ParmVarReplacer : public MatchFinder::MatchCallback {

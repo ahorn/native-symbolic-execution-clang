@@ -39,6 +39,7 @@ int main(int argc, const char **argv) {
   ForConditionReplacer ForStmts(Replace);
   LocalVarReplacer LocalVarDecls(Replace, &IM);
   GlobalVarReplacer GlobalVarDecls(Replace);
+  MainFunctionReplacer MainFunction(Replace, &GlobalVarDecls.GlobalVars);
   ParmVarReplacer ParmVarDecls(Replace);
   ReturnTypeReplacer ReturnTypes(Replace);
   IncrementReplacer Increments(Replace);
@@ -49,6 +50,9 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeForConditionMatcher(), &ForStmts);
   Finder.addMatcher(makeLocalVarMatcher(), &LocalVarDecls);
   Finder.addMatcher(makeGlobalVarMatcher(), &GlobalVarDecls);
+
+  // requires GlobalVarDecls to run first, so order matters
+  Finder.addMatcher(makeMainFunctionMatcher(), &MainFunction);
   Finder.addMatcher(makeParmVarDeclMatcher(), &ParmVarDecls);
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
   Finder.addMatcher(makeIncrementMatcher(), &Increments);
