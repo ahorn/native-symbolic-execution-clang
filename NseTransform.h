@@ -125,13 +125,22 @@ private:
 
 class MainFunctionReplacer : public MatchFinder::MatchCallback {
 public :
-  MainFunctionReplacer(tooling::Replacements *Replace, std::vector<std::string> *GlobalVars)
-      : Replace(Replace), GlobalVars(GlobalVars) {}
+  MainFunctionReplacer(
+    const std::string& NseNamespace,
+    const std::string& Strategy,
+    tooling::Replacements *Replace,
+    std::vector<std::string> *GlobalVars)
+      : NseNamespace(NseNamespace),
+        Strategy(Strategy),
+        Replace(Replace),
+        GlobalVars(GlobalVars) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
 private:
+  const std::string& NseNamespace;
+  const std::string& Strategy;
   tooling::Replacements *Replace;
   std::vector<std::string> *GlobalVars;
 };

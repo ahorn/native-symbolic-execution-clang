@@ -60,7 +60,9 @@ int main(int argc, const char **argv) {
   ForConditionReplacer ForStmts(NseBranchStrategy, Replace);
   LocalVarReplacer LocalVarDecls(Replace, &IM);
   GlobalVarReplacer GlobalVarDecls(Replace);
-  MainFunctionReplacer MainFunction(Replace, &GlobalVarDecls.GlobalVars);
+  MainFunctionReplacer MainFunction(NamespaceOpt, StrategyOpt,
+    Replace, &GlobalVarDecls.GlobalVars);
+
   ParmVarReplacer ParmVarDecls(Replace);
   ReturnTypeReplacer ReturnTypes(Replace);
   IncrementReplacer Increments(Replace);

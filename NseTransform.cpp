@@ -207,14 +207,41 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
   DEBUG(llvm::errs() << "MainFunctionReplacer: " << GlobalVars->size()
                      << " global variables" << "\n");
 
+  const std::string NseMakeAny = "  " + NseNamespace + "::make_any(";
   Stmt *FuncBody = D->getBody();
   SourceLocation BodyLocBegin = FuncBody->getLocStart().getLocWithOffset(1);
   std::string MakeAnys = "\n";
   for (const std::string& GlobalVar : *GlobalVars)
   {
-    MakeAnys += "  crv::make_any(" + GlobalVar + ");\n";
+    MakeAnys += NseMakeAny + GlobalVar + ");\n";
   }
   Replace->insert(tooling::Replacement(SM, BodyLocBegin, 0, MakeAnys));
+
+  const std::string NseStrategy = NseNamespace + "::" + Strategy + "()";
+  SourceLocation BodyEndLoc = FuncBody->getLocEnd().getLocWithOffset(1);
+  Replace->insert(tooling::Replacement(SM, BodyEndLoc, 0,
+    "\n\n"
+    "int main() {\n"
+    "  bool error = false;\n"
+    "  std::chrono::seconds seconds(std::chrono::seconds::zero());\n"
+    "  {\n"
+    "    smt::NonReentrantTimer<std::chrono::seconds> timer(seconds);\n"
+    "\n"
+    "    do {\n"
+    "      nse_main();\n"
+    "      error |= smt::sat == " + NseStrategy + ".check();\n"
+    "    } while (" + NseStrategy + ".find_next_path() && !error);\n"
+    "  }\n"
+    "\n"
+    "  if (error)\n"
+    "    std::cout << \"Found bug!\" << std::endl;\n"
+    "  else\n"
+    "    std::cout << \"Could not find any bugs.\" << std::endl;\n"
+    "\n"
+    "  report_statistics(" + NseStrategy + ".solver().stats(), " + NseStrategy + ".stats(), seconds);\n"
+    "\n"
+    "  return error;\n"
+    "}"));
 }
 
 // Passes integral parameters passed by value and other types by reference
