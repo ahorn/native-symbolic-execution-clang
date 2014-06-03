@@ -98,15 +98,14 @@ private:
 
 class LocalVarReplacer : public MatchFinder::MatchCallback {
 public :
-  LocalVarReplacer(tooling::Replacements *Replace, IncludesManager* IM)
-      : Replace(Replace), IM(IM) {}
+  LocalVarReplacer(tooling::Replacements *Replace)
+      : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
 private:
   tooling::Replacements *Replace;
-  IncludesManager* IM;
 };
 
 class GlobalVarReplacer : public MatchFinder::MatchCallback {
@@ -129,11 +128,13 @@ public :
     const std::string& NseNamespace,
     const std::string& Strategy,
     tooling::Replacements *Replace,
-    std::vector<std::string> *GlobalVars)
+    std::vector<std::string> *GlobalVars,
+    IncludesManager* IM)
       : NseNamespace(NseNamespace),
         Strategy(Strategy),
         Replace(Replace),
-        GlobalVars(GlobalVars) {}
+        GlobalVars(GlobalVars),
+        IM(IM) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
@@ -143,6 +144,7 @@ private:
   const std::string& Strategy;
   tooling::Replacements *Replace;
   std::vector<std::string> *GlobalVars;
+  IncludesManager* IM;
 };
 
 class ParmVarReplacer : public MatchFinder::MatchCallback {

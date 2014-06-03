@@ -58,10 +58,10 @@ int main(int argc, const char **argv) {
   IfConditionReplacer IfStmts(NseBranchStrategy, Replace);
   IfConditionVariableReplacer IfConditionVariableStmts;
   ForConditionReplacer ForStmts(NseBranchStrategy, Replace);
-  LocalVarReplacer LocalVarDecls(Replace, &IM);
+  LocalVarReplacer LocalVarDecls(Replace);
   GlobalVarReplacer GlobalVarDecls(Replace);
   MainFunctionReplacer MainFunction(NamespaceOpt, StrategyOpt,
-    Replace, &GlobalVarDecls.GlobalVars);
+    Replace, &GlobalVarDecls.GlobalVars, &IM);
 
   ParmVarReplacer ParmVarDecls(Replace);
   ReturnTypeReplacer ReturnTypes(Replace);
