@@ -149,39 +149,19 @@ void addNseHeader(
   }
 }
 
-void internalInstrumentVarDecl(
+void instrumentVarDecl(
   StringRef NseClassPrefix,
-  StringRef NseClassSuffix,
   SourceRange SR,
   SourceManager &SM,
   const LangOptions &LO,
   tooling::Replacements &Replace) {
 
+  const std::string NseClassSuffix = ">";
   CharSourceRange Range = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(SR), SM, LO);
 
   Replace.insert(tooling::Replacement(SM, Range.getBegin(), 0, NseClassPrefix));
   Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, NseClassSuffix));
-}
-
-void instrumentVarDecl(
-  StringRef NseClass,
-  SourceRange SR,
-  SourceManager &SM,
-  const LangOptions &LO,
-  tooling::Replacements &Replace) {
-
-  return internalInstrumentVarDecl(NseClass, ">", SR, SM, LO, Replace);
-}
-
-void instrumentVarDeclAsRef(
-  StringRef NseClass,
-  SourceRange SR,
-  SourceManager &SM,
-  const LangOptions &LO,
-  tooling::Replacements &Replace) {
-
-  return internalInstrumentVarDecl(NseClass, ">&", SR, SM, LO, Replace);
 }
 
 void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -300,15 +280,9 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  QualType QT = D->getType();
   TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc();
-
-  if (QT->isIntegerType())
-    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
-      Result.Context->getLangOpts(), *Replace);
-  else
-    instrumentVarDeclAsRef(NseInternalClassName, TL.getSourceRange(), SM,
-      Result.Context->getLangOpts(), *Replace);
+  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
 }
 
 void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
