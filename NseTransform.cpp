@@ -94,13 +94,30 @@ void IfConditionReplacer::run(const MatchFinder::MatchResult &Result) {
   const Expr *E = Result.Nodes.getNodeAs<Expr>(IfConditionBindId);
   assert(E && "Bad Callback. No node provided");
 
+  SourceLocation Loc = E->getExprLoc();
   SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   SourceRange Range = E->getSourceRange();
   instrumentControlFlow(NseBranchStrategy, Range, SM,
     Result.Context->getLangOpts(), *Replace);
 }
 
 void IfConditionVariableReplacer::run(const MatchFinder::MatchResult &Result) {
+  const Expr *E = Result.Nodes.getNodeAs<Expr>(IfConditionVariableBindId);
+
+  SourceLocation Loc = E->getExprLoc();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   assert(0 && "Condition variables are currently not supported");
 }
 
@@ -108,7 +125,14 @@ void ForConditionReplacer::run(const MatchFinder::MatchResult &Result) {
   const Expr *E = Result.Nodes.getNodeAs<Expr>(ForConditionBindId);
   assert(E && "Bad Callback. No node provided");
 
+  SourceLocation Loc = E->getExprLoc();
   SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   instrumentControlFlow(NseBranchStrategy, E->getSourceRange(), SM,
     Result.Context->getLangOpts(), *Replace);
 }
@@ -168,8 +192,15 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   if (!V->hasLocalStorage())
     return;
 
-  TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
+  SourceLocation Loc = V->getLocStart();
   SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
+  TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
     Result.Context->getLangOpts(), *Replace);
 
@@ -183,10 +214,17 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   if (!V->hasGlobalStorage())
     return;
 
+  SourceLocation Loc = V->getLocStart();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   GlobalVars.push_back(V->getName().str());
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
-  SourceManager &SM = *Result.SourceManager;
   instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
     Result.Context->getLangOpts(), *Replace);
 }
@@ -198,6 +236,11 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
 
   SourceManager &SM = *Result.SourceManager;
   SourceLocation NameLocBegin = D->getNameInfo().getBeginLoc();
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(NameLocBegin))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(NameLocBegin) << '\n');
+    return;
+  }
 
   Replace->insert(tooling::Replacement(SM, NameLocBegin, 4, "nse_main"));
 
@@ -249,9 +292,16 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const ParmVarDecl *D = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
   assert(D && "Bad Callback. No node provided");
 
+  SourceLocation Loc = D->getLocStart();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   QualType QT = D->getType();
   TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc();
-  SourceManager &SM = *Result.SourceManager;
 
   if (QT->isIntegerType())
     instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
@@ -268,10 +318,17 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
   if (D->getName() == "main")
     return;
 
+  SourceLocation Loc = D->getLocStart();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
   TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc().
     IgnoreParens().castAs<FunctionProtoTypeLoc>().getReturnLoc();
 
-  SourceManager &SM = *Result.SourceManager;
   instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
     Result.Context->getLangOpts(), *Replace);
 }
@@ -286,6 +343,12 @@ void IncrementReplacer::run(const MatchFinder::MatchResult &Result) {
   SourceManager &SM = *Result.SourceManager;
   SourceLocation LocBegin = O->getSubExpr()->getLocStart();
   SourceLocation LocEnd = O->getOperatorLoc();
+
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(LocBegin))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(LocBegin) << '\n');
+    return;
+  }
 
   Replace->insert(tooling::Replacement(SM, LocBegin, 0, "crv::post_increment("));
   Replace->insert(tooling::Replacement(SM, LocEnd, 2, ")"));
