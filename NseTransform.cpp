@@ -172,7 +172,7 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   if (!V->hasLocalStorage())
     return;
 
-  SourceLocation Loc = V->getLocStart();
+  SourceLocation Loc = V->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
@@ -194,7 +194,7 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   if (!V->hasGlobalStorage())
     return;
 
-  SourceLocation Loc = V->getLocStart();
+  SourceLocation Loc = V->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
@@ -215,13 +215,14 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
   assert(GlobalVars && "GlobalVars is NULL");
 
   SourceManager &SM = *Result.SourceManager;
-  SourceLocation NameLocBegin = D->getNameInfo().getBeginLoc();
-  if (!Result.Context->getSourceManager().isWrittenInMainFile(NameLocBegin))
+  SourceLocation Loc = D->getLocation();
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
-    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(NameLocBegin) << '\n');
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
     return;
   }
 
+  SourceLocation NameLocBegin = D->getNameInfo().getBeginLoc();
   Replace->insert(tooling::Replacement(SM, NameLocBegin, 4, "nse_main"));
 
   if (!D->hasBody())
@@ -272,7 +273,7 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const ParmVarDecl *D = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
   assert(D && "Bad Callback. No node provided");
 
-  SourceLocation Loc = D->getLocStart();
+  SourceLocation Loc = D->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
@@ -292,7 +293,7 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
   if (D->getName() == "main")
     return;
 
-  SourceLocation Loc = D->getLocStart();
+  SourceLocation Loc = D->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
