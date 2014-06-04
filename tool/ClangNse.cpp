@@ -68,6 +68,7 @@ int main(int argc, const char **argv) {
   ReturnTypeReplacer ReturnTypes(Replace);
   IncrementReplacer Increments(Replace);
   AssumeReplacer Assumptions(NseStrategy, Replace);
+  NondetReplacer Nondeterminism(NamespaceOpt, Replace);
 
   MatchFinder Finder;
   Finder.addMatcher(makeIfConditionMatcher(), &IfStmts);
@@ -82,6 +83,7 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
   Finder.addMatcher(makeIncrementMatcher(), &Increments);
   Finder.addMatcher(makeAssumeMatcher(), &Assumptions);
+  Finder.addMatcher(makeNondetMatcher(), &Nondeterminism);
 
   return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM).get());
 }

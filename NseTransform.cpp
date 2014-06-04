@@ -7,6 +7,7 @@
 
 const char *NseInternalClassName = "crv::Internal<";
 const char *NseAssumeFunctionName = "nse_assume";
+const char *NseNondetFunctionRegex = "nse_nondet.*";
 
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
@@ -18,6 +19,7 @@ const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
 const char *IncrementBindId = "post_increment";
 const char *AssumeBindId = "assume";
+const char *NondetBindId = "nondet";
 
 bool IncludesManager::handleBeginSource(CompilerInstance &CI,
   StringRef Filename) {
@@ -81,6 +83,11 @@ StatementMatcher makeIncrementMatcher() {
 StatementMatcher makeAssumeMatcher() {
   return callExpr(callee(functionDecl(
     hasName(NseAssumeFunctionName)))).bind(AssumeBindId);
+}
+
+StatementMatcher makeNondetMatcher() {
+  return callExpr(callee(functionDecl(
+    matchesName(NseNondetFunctionRegex)))).bind(NondetBindId);
 }
 
 void instrumentControlFlow(
@@ -367,4 +374,26 @@ void AssumeReplacer::run(const MatchFinder::MatchResult &Result) {
 
   const std::string NseAssume = NseStrategy + "::add_assertion";
   Replace->insert(tooling::Replacement(SM, LocBegin, 10, NseAssume));
+}
+
+void NondetReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(NondetBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceManager &SM = *Result.SourceManager;
+  SourceLocation Loc = E->getCallee()->getExprLoc();
+
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
+  QualType QT = E->getCallReturnType();
+  SourceRange SR = E->getCallee()->getSourceRange();
+  CharSourceRange Range = Lexer::makeFileCharRange(
+      CharSourceRange::getTokenRange(SR), SM, Result.Context->getLangOpts());
+
+  const std::string NseAny = NseNamespace + "::any<";
+  Replace->insert(tooling::Replacement(SM, Range, NseAny + QT.getAsString() + ">"));
 }
