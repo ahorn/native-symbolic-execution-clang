@@ -372,7 +372,7 @@ void AssumeReplacer::run(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  const std::string NseAssume = NseStrategy + "::add_assertion";
+  const std::string NseAssume = NseStrategy + ".add_assertion";
   Replace->insert(tooling::Replacement(SM, LocBegin, 10, NseAssume));
 }
 
