@@ -51,7 +51,8 @@ int main(int argc, const char **argv) {
     OptionsParser.getSourcePathList());
 
   // fully qualified function name without parenthesis
-  const std::string NseBranchStrategy = NamespaceOpt + "::" + StrategyOpt + "()." + BranchOpt;
+  const std::string NseStrategy = NamespaceOpt + "::" + StrategyOpt + "()";
+  const std::string NseBranchStrategy = NseStrategy + "." + BranchOpt;
 
   IncludesManager IM;
   tooling::Replacements *Replace = &Tool.getReplacements();
@@ -66,6 +67,7 @@ int main(int argc, const char **argv) {
   ParmVarReplacer ParmVarDecls(Replace);
   ReturnTypeReplacer ReturnTypes(Replace);
   IncrementReplacer Increments(Replace);
+  AssumeReplacer Assumptions(NseStrategy, Replace);
 
   MatchFinder Finder;
   Finder.addMatcher(makeIfConditionMatcher(), &IfStmts);
@@ -79,6 +81,7 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeParmVarDeclMatcher(), &ParmVarDecls);
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
   Finder.addMatcher(makeIncrementMatcher(), &Increments);
+  Finder.addMatcher(makeAssumeMatcher(), &Assumptions);
 
   return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM).get());
 }

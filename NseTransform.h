@@ -15,7 +15,8 @@
 using namespace clang;
 using namespace clang::ast_matchers;
 
-extern const char *CrvInternalClassName;
+extern const char *NseInternalClassName;
+extern const char *NseAssumeFunctionName;
 
 extern const char *IfConditionBindId;
 extern const char *IfConditionVariableBindId;
@@ -37,6 +38,7 @@ DeclarationMatcher makeMainFunctionMatcher();
 DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
 StatementMatcher makeIncrementMatcher();
+StatementMatcher makeAssumeMatcher();
 
 void instrumentVarDecl(
   StringRef crvClass,
@@ -180,6 +182,22 @@ public :
       override;
 
 private:
+  tooling::Replacements *Replace;
+};
+
+class AssumeReplacer : public MatchFinder::MatchCallback {
+public :
+  AssumeReplacer(
+    const std::string& NseStrategy,
+    tooling::Replacements *Replace)
+      : NseStrategy(NseStrategy),
+        Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+private:
+  const std::string& NseStrategy;
   tooling::Replacements *Replace;
 };
 

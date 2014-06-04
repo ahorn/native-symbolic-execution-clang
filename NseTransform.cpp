@@ -6,6 +6,7 @@
 #include "NseTransform.h"
 
 const char *NseInternalClassName = "crv::Internal<";
+const char *NseAssumeFunctionName = "nse_assume";
 
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
@@ -16,6 +17,7 @@ const char *MainFunctionBindId = "main_function";
 const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
 const char *IncrementBindId = "post_increment";
+const char *AssumeBindId = "assume";
 
 bool IncludesManager::handleBeginSource(CompilerInstance &CI,
   StringRef Filename) {
@@ -74,6 +76,11 @@ DeclarationMatcher makeReturnTypeMatcher() {
 StatementMatcher makeIncrementMatcher() {
   return unaryOperator(
     hasOperatorName("++")).bind(IncrementBindId);
+}
+
+StatementMatcher makeAssumeMatcher() {
+  return callExpr(callee(functionDecl(
+    hasName(NseAssumeFunctionName)))).bind(AssumeBindId);
 }
 
 void instrumentControlFlow(
@@ -343,4 +350,21 @@ void IncrementReplacer::run(const MatchFinder::MatchResult &Result) {
 
   Replace->insert(tooling::Replacement(SM, LocBegin, 0, "crv::post_increment("));
   Replace->insert(tooling::Replacement(SM, LocEnd, 2, ")"));
+}
+
+void AssumeReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(AssumeBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceManager &SM = *Result.SourceManager;
+  SourceLocation LocBegin = E->getCallee()->getExprLoc();
+
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(LocBegin))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(LocBegin) << '\n');
+    return;
+  }
+
+  const std::string NseAssume = NseStrategy + "::add_assertion";
+  Replace->insert(tooling::Replacement(SM, LocBegin, 10, NseAssume));
 }
