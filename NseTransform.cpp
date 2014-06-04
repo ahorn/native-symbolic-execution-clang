@@ -48,10 +48,7 @@ StatementMatcher makeForConditionMatcher() {
 }
 
 StatementMatcher makeLocalVarMatcher() {
-  return declStmt(
-    has(
-      varDecl(
-        hasType(isInteger())))).bind(LocalVarBindId);
+  return declStmt(has(varDecl())).bind(LocalVarBindId);
 }
 
 DeclarationMatcher makeGlobalVarMatcher() {
@@ -163,6 +160,21 @@ void addNseHeader(
   }
 }
 
+void instrumentNamedVarDecl(
+  StringRef NseClassPrefix,
+  StringRef TypeName,
+  StringRef VariableName,
+  SourceRange SR,
+  SourceManager &SM,
+  const LangOptions &LO,
+  tooling::Replacements &Replace) {
+
+  CharSourceRange Range = Lexer::makeFileCharRange(
+      CharSourceRange::getTokenRange(SR), SM, LO);
+
+  Replace.insert(tooling::Replacement(SM, Range, (NseClassPrefix + TypeName + "> " + VariableName).str()));
+}
+
 void instrumentVarDecl(
   StringRef NseClassPrefix,
   SourceRange SR,
@@ -178,6 +190,7 @@ void instrumentVarDecl(
   Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, NseClassSuffix));
 }
 
+/// Fundamental types, pointers and arrays of fundamental types
 bool isSupportedType(QualType QT) {
   QualType CanonicalType = QT.getTypePtr()->getCanonicalTypeInternal();
   if (CanonicalType->isFundamentalType())
@@ -186,6 +199,9 @@ bool isSupportedType(QualType QT) {
   if (const PointerType *PtrType = dyn_cast<PointerType>(CanonicalType.getTypePtr())) {
     QualType PointeeType = PtrType->getPointeeType();
     return PointeeType->isFundamentalType();
+  } else if (const ArrayType *PtrType = dyn_cast<ArrayType>(CanonicalType.getTypePtr())) {
+    QualType ElementType = PtrType->getElementType();
+    return ElementType->isFundamentalType();
   }
 
   return false;
@@ -196,6 +212,7 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   assert(D && "Bad Callback. No node provided");
 
   const VarDecl *V = cast<VarDecl>(*D->decl_begin());
+
   if (!V->hasLocalStorage() || !isSupportedType(V->getType()))
     return;
 
@@ -208,8 +225,13 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   }
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
-    Result.Context->getLangOpts(), *Replace);
+
+  if (V->getType()->isArrayType())
+    instrumentNamedVarDecl(NseInternalClassName, V->getType().getAsString(),
+      V->getName(), TL.getSourceRange(), SM, Result.Context->getLangOpts(), *Replace);
+  else
+    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
 
   //const FileEntry *File = SM.getFileEntryForID(SM.getFileID(TL.getBeginLoc()));
   //addNseHeader(File, *Replace, *IM->Includes);
@@ -232,8 +254,12 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   GlobalVars.push_back(V->getName().str());
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
-    Result.Context->getLangOpts(), *Replace);
+  if (V->getType()->isArrayType())
+    instrumentNamedVarDecl(NseInternalClassName, V->getType().getAsString(),
+      V->getName(), TL.getSourceRange(), SM, Result.Context->getLangOpts(), *Replace);
+  else
+    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
 }
 
 void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
@@ -297,13 +323,13 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
 
 // Passes integral parameters passed by value and other types by reference
 void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
-  const ParmVarDecl *D = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
-  assert(D && "Bad Callback. No node provided");
+  const ParmVarDecl *V = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
+  assert(V && "Bad Callback. No node provided");
 
-  if (!isSupportedType(D->getType()))
+  if (!isSupportedType(V->getType()))
     return;
 
-  SourceLocation Loc = D->getLocation();
+  SourceLocation Loc = V->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
   {
@@ -311,9 +337,15 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  TypeLoc TL = D->getTypeSourceInfo()->getTypeLoc();
-  instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
-    Result.Context->getLangOpts(), *Replace);
+  TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
+
+  // recognize pointer decay
+  if (V->getOriginalType()->isArrayType())
+    instrumentNamedVarDecl(NseInternalClassName, V->getType().getAsString(),
+      V->getName(), TL.getSourceRange(), SM, Result.Context->getLangOpts(), *Replace);
+  else
+    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
 }
 
 void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
