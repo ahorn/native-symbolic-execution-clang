@@ -24,6 +24,7 @@ extern const char *IfConditionVariableBindId;
 extern const char *ForConditionBindId;
 extern const char *LocalVarBindId;
 extern const char *GlobalVarBindId;
+extern const char *FieldBindId;
 extern const char *MainFunctionBindId;
 extern const char *FieldBindId;
 extern const char *ParmVarBindId;
@@ -36,6 +37,7 @@ StatementMatcher makeForConditionMatcher();
 StatementMatcher makeWhileConditionMatcher();
 StatementMatcher makeLocalVarMatcher();
 DeclarationMatcher makeGlobalVarMatcher();
+DeclarationMatcher makeFieldMatcher();
 DeclarationMatcher makeMainFunctionMatcher();
 DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
@@ -138,6 +140,18 @@ public :
       override;
 
   std::vector<std::string> GlobalVars;
+
+private:
+  tooling::Replacements *Replace;
+};
+
+class FieldReplacer : public MatchFinder::MatchCallback {
+public :
+  FieldReplacer(tooling::Replacements *Replace)
+      : Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
 
 private:
   tooling::Replacements *Replace;

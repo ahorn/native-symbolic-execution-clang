@@ -15,6 +15,7 @@ const char *ForConditionBindId = "for_condition";
 const char *WhileConditionBindId = "while_condition";
 const char *LocalVarBindId = "internal_decl";
 const char *GlobalVarBindId = "external_decl";
+const char *FieldBindId = "external_decl";
 const char *MainFunctionBindId = "main_function";
 const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
@@ -59,9 +60,11 @@ StatementMatcher makeLocalVarMatcher() {
 }
 
 DeclarationMatcher makeGlobalVarMatcher() {
-  return varDecl(
-    hasType(
-      isInteger())).bind(GlobalVarBindId);
+  return varDecl().bind(GlobalVarBindId);
+}
+
+DeclarationMatcher makeFieldMatcher() {
+  return fieldDecl().bind(FieldBindId);
 }
 
 DeclarationMatcher makeMainFunctionMatcher() {
@@ -73,10 +76,7 @@ DeclarationMatcher makeParmVarDeclMatcher() {
 }
 
 DeclarationMatcher makeReturnTypeMatcher() {
-  return functionDecl(
-    returns(
-      qualType(
-        isInteger()))).bind(ReturnTypeBindId);
+  return functionDecl().bind(ReturnTypeBindId);
 }
 
 StatementMatcher makeIncrementMatcher() {
@@ -275,6 +275,29 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   }
 
   GlobalVars.push_back(V->getName().str());
+
+  TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
+  if (V->getType()->isArrayType())
+    instrumentNamedVarDecl(NseInternalClassName, V->getType().getAsString(),
+      V->getName(), TL.getSourceRange(), SM, Result.Context->getLangOpts(), *Replace);
+  else
+    instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
+      Result.Context->getLangOpts(), *Replace);
+}
+
+void FieldReplacer::run(const MatchFinder::MatchResult &Result) {
+  const FieldDecl *V = Result.Nodes.getNodeAs<FieldDecl>(GlobalVarBindId);
+  assert(V && "Bad Callback. No node provided");
+  if (!isSupportedType(V->getType()))
+    return;
+
+  SourceLocation Loc = V->getLocation();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   if (V->getType()->isArrayType())

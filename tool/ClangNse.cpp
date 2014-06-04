@@ -62,6 +62,7 @@ int main(int argc, const char **argv) {
   WhileConditionReplacer WhileStmts(NseBranchStrategy, Replace);
   LocalVarReplacer LocalVarDecls(Replace);
   GlobalVarReplacer GlobalVarDecls(Replace);
+  FieldReplacer FieldDecls(Replace);
   MainFunctionReplacer MainFunction(NamespaceOpt, StrategyOpt,
     Replace, &GlobalVarDecls.GlobalVars, &IM);
 
@@ -78,6 +79,7 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeWhileConditionMatcher(), &WhileStmts);
   Finder.addMatcher(makeLocalVarMatcher(), &LocalVarDecls);
   Finder.addMatcher(makeGlobalVarMatcher(), &GlobalVarDecls);
+  Finder.addMatcher(makeFieldMatcher(), &FieldDecls);
 
   // requires GlobalVarDecls to run first, so order matters
   Finder.addMatcher(makeMainFunctionMatcher(), &MainFunction);
