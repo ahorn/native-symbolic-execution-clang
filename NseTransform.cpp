@@ -7,6 +7,7 @@
 
 const char *NseInternalClassName = "crv::Internal<";
 const char *NseAssumeFunctionName = "nse_assume";
+const char *NseAssertFunctionName = "nse_assert";
 const char *NseNondetFunctionRegex = "nse_nondet.*";
 
 const char *IfConditionBindId = "if_condition";
@@ -21,6 +22,7 @@ const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
 const char *IncrementBindId = "post_increment";
 const char *AssumeBindId = "assume";
+const char *AssertBindId = "assert";
 const char *NondetBindId = "nondet";
 
 bool IncludesManager::handleBeginSource(CompilerInstance &CI,
@@ -87,6 +89,11 @@ StatementMatcher makeIncrementMatcher() {
 StatementMatcher makeAssumeMatcher() {
   return callExpr(callee(functionDecl(
     hasName(NseAssumeFunctionName)))).bind(AssumeBindId);
+}
+
+StatementMatcher makeAssertMatcher() {
+  return callExpr(callee(functionDecl(
+    hasName(NseAssertFunctionName)))).bind(AssertBindId);
 }
 
 StatementMatcher makeNondetMatcher() {
@@ -456,6 +463,24 @@ void AssumeReplacer::run(const MatchFinder::MatchResult &Result) {
 
   const std::string NseAssume = NseStrategy + ".add_assertion";
   Replace->insert(tooling::Replacement(SM, LocBegin, 10, NseAssume));
+}
+
+void AssertReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(AssertBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceManager &SM = *Result.SourceManager;
+  SourceLocation LocBegin = E->getCallee()->getExprLoc();
+
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(LocBegin))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(LocBegin) << '\n');
+    return;
+  }
+
+  const std::string NseAssert = NseStrategy + ".add_error(!";
+  Replace->insert(tooling::Replacement(SM, LocBegin, 10, NseAssert));
+  Replace->insert(tooling::Replacement(SM, E->getRParenLoc(), 0, ")"));
 }
 
 void NondetReplacer::run(const MatchFinder::MatchResult &Result) {

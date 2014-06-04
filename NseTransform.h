@@ -17,6 +17,7 @@ using namespace clang::ast_matchers;
 
 extern const char *NseInternalClassName;
 extern const char *NseAssumeFunctionName;
+extern const char *NseAssertFunctionName;
 extern const char *NseNondetFunctionRegex;
 
 extern const char *IfConditionBindId;
@@ -43,6 +44,7 @@ DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
 StatementMatcher makeIncrementMatcher();
 StatementMatcher makeAssumeMatcher();
+StatementMatcher makeAssertMatcher();
 StatementMatcher makeNondetMatcher();
 
 void instrumentVarDecl(
@@ -221,6 +223,22 @@ private:
 class AssumeReplacer : public MatchFinder::MatchCallback {
 public :
   AssumeReplacer(
+    const std::string& NseStrategy,
+    tooling::Replacements *Replace)
+      : NseStrategy(NseStrategy),
+        Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+private:
+  const std::string& NseStrategy;
+  tooling::Replacements *Replace;
+};
+
+class AssertReplacer : public MatchFinder::MatchCallback {
+public :
+  AssertReplacer(
     const std::string& NseStrategy,
     tooling::Replacements *Replace)
       : NseStrategy(NseStrategy),
