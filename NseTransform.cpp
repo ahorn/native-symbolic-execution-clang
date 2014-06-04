@@ -164,12 +164,25 @@ void instrumentVarDecl(
   Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, NseClassSuffix));
 }
 
+bool isSupportedType(QualType QT) {
+  QualType CanonicalType = QT.getTypePtr()->getCanonicalTypeInternal();
+  if (CanonicalType->isFundamentalType())
+    return true;
+
+  if (const PointerType *PtrType = dyn_cast<PointerType>(CanonicalType.getTypePtr())) {
+    QualType PointeeType = PtrType->getPointeeType();
+    return PointeeType->isFundamentalType();
+  }
+
+  return false;
+}
+
 void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const DeclStmt *D = Result.Nodes.getNodeAs<DeclStmt>(LocalVarBindId);
   assert(D && "Bad Callback. No node provided");
 
   const VarDecl *V = cast<VarDecl>(*D->decl_begin());
-  if (!V->hasLocalStorage())
+  if (!V->hasLocalStorage() || !isSupportedType(V->getType()))
     return;
 
   SourceLocation Loc = V->getLocation();
@@ -191,7 +204,7 @@ void LocalVarReplacer::run(const MatchFinder::MatchResult &Result) {
 void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const VarDecl *V = Result.Nodes.getNodeAs<VarDecl>(GlobalVarBindId);
   assert(V && "Bad Callback. No node provided");
-  if (!V->hasGlobalStorage())
+  if (!V->hasGlobalStorage() || !isSupportedType(V->getType()))
     return;
 
   SourceLocation Loc = V->getLocation();
@@ -273,6 +286,9 @@ void ParmVarReplacer::run(const MatchFinder::MatchResult &Result) {
   const ParmVarDecl *D = Result.Nodes.getNodeAs<ParmVarDecl>(ParmVarBindId);
   assert(D && "Bad Callback. No node provided");
 
+  if (!isSupportedType(D->getType()))
+    return;
+
   SourceLocation Loc = D->getLocation();
   SourceManager &SM = *Result.SourceManager;
   if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
@@ -290,7 +306,7 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
   const FunctionDecl *D = Result.Nodes.getNodeAs<FunctionDecl>(ReturnTypeBindId);
   assert(D && "Bad Callback. No node provided");
 
-  if (D->getName() == "main")
+  if (D->getName() == "main" || !isSupportedType(D->getReturnType()))
     return;
 
   SourceLocation Loc = D->getLocation();
