@@ -213,9 +213,13 @@ void instrumentVarDecl(
   Replace.insert(tooling::Replacement(SM, Range.getEnd(), 0, NseClassSuffix));
 }
 
-/// Fundamental types, pointers and arrays of fundamental types
+/// Non-void fundamental types, pointers and arrays of fundamental types
 bool isSupportedType(QualType QT) {
   QualType CanonicalType = QT.getTypePtr()->getCanonicalTypeInternal();
+
+  if (CanonicalType->isVoidType())
+    return false;
+
   if (CanonicalType->isFundamentalType())
     return true;
 
@@ -398,7 +402,7 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
   const FunctionDecl *D = Result.Nodes.getNodeAs<FunctionDecl>(ReturnTypeBindId);
   assert(D && "Bad Callback. No node provided");
 
-  if (D->getName() == "main" || !isSupportedType(D->getReturnType()))
+  if (D->isMain() || !isSupportedType(D->getReturnType()))
     return;
 
   SourceLocation Loc = D->getLocation();
