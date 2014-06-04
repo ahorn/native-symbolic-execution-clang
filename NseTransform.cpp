@@ -12,6 +12,7 @@ const char *NseNondetFunctionRegex = "nse_nondet.*";
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
 const char *ForConditionBindId = "for_condition";
+const char *WhileConditionBindId = "while_condition";
 const char *LocalVarBindId = "internal_decl";
 const char *GlobalVarBindId = "external_decl";
 const char *MainFunctionBindId = "main_function";
@@ -45,6 +46,12 @@ StatementMatcher makeForConditionMatcher() {
   return forStmt(
     hasCondition(
       expr().bind(ForConditionBindId)));
+}
+
+StatementMatcher makeWhileConditionMatcher() {
+  return whileStmt(
+    hasCondition(
+      expr().bind(WhileConditionBindId)));
 }
 
 StatementMatcher makeLocalVarMatcher() {
@@ -134,6 +141,22 @@ void IfConditionVariableReplacer::run(const MatchFinder::MatchResult &Result) {
 
 void ForConditionReplacer::run(const MatchFinder::MatchResult &Result) {
   const Expr *E = Result.Nodes.getNodeAs<Expr>(ForConditionBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceLocation Loc = E->getExprLoc();
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
+  instrumentControlFlow(NseBranchStrategy, E->getSourceRange(), SM,
+    Result.Context->getLangOpts(), *Replace);
+}
+
+void WhileConditionReplacer::run(const MatchFinder::MatchResult &Result) {
+  const Expr *E = Result.Nodes.getNodeAs<Expr>(WhileConditionBindId);
   assert(E && "Bad Callback. No node provided");
 
   SourceLocation Loc = E->getExprLoc();

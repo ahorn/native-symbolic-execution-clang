@@ -33,6 +33,7 @@ extern const char *IncrementBindId;
 StatementMatcher makeIfConditionMatcher();
 StatementMatcher makeIfConditionVariableMatcher();
 StatementMatcher makeForConditionMatcher();
+StatementMatcher makeWhileConditionMatcher();
 StatementMatcher makeLocalVarMatcher();
 DeclarationMatcher makeGlobalVarMatcher();
 DeclarationMatcher makeMainFunctionMatcher();
@@ -87,6 +88,22 @@ public :
 class ForConditionReplacer : public MatchFinder::MatchCallback {
 public :
   ForConditionReplacer(
+    const std::string& NseBranchStrategy,
+    tooling::Replacements *Replace)
+      : NseBranchStrategy(NseBranchStrategy),
+        Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+private:
+  const std::string& NseBranchStrategy;
+  tooling::Replacements *Replace;
+};
+
+class WhileConditionReplacer : public MatchFinder::MatchCallback {
+public :
+  WhileConditionReplacer(
     const std::string& NseBranchStrategy,
     tooling::Replacements *Replace)
       : NseBranchStrategy(NseBranchStrategy),

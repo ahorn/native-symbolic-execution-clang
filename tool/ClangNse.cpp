@@ -59,6 +59,7 @@ int main(int argc, const char **argv) {
   IfConditionReplacer IfStmts(NseBranchStrategy, Replace);
   IfConditionVariableReplacer IfConditionVariableStmts;
   ForConditionReplacer ForStmts(NseBranchStrategy, Replace);
+  WhileConditionReplacer WhileStmts(NseBranchStrategy, Replace);
   LocalVarReplacer LocalVarDecls(Replace);
   GlobalVarReplacer GlobalVarDecls(Replace);
   MainFunctionReplacer MainFunction(NamespaceOpt, StrategyOpt,
@@ -74,6 +75,7 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeIfConditionMatcher(), &IfStmts);
   Finder.addMatcher(makeIfConditionVariableMatcher(), &IfConditionVariableStmts);
   Finder.addMatcher(makeForConditionMatcher(), &ForStmts);
+  Finder.addMatcher(makeWhileConditionMatcher(), &WhileStmts);
   Finder.addMatcher(makeLocalVarMatcher(), &LocalVarDecls);
   Finder.addMatcher(makeGlobalVarMatcher(), &GlobalVarDecls);
 
