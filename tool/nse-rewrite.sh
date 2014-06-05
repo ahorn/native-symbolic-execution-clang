@@ -2,7 +2,7 @@
 
 FILENAME=$1
 TMP=.${FILENAME}.tmp
-CLANG_NSE=clang-nse
+CLANG_NSE=./clang-nse
 CLANG_CPP=/usr/bin/clang++
 
 ${CLANG_CPP} -cc1 -rewrite-macros ${FILENAME} > ${TMP} && mv ${TMP} ${FILENAME}
