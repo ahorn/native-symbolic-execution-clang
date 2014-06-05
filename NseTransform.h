@@ -18,7 +18,8 @@ using namespace clang::ast_matchers;
 extern const char *NseInternalClassName;
 extern const char *NseAssumeFunctionName;
 extern const char *NseAssertFunctionName;
-extern const char *NseNondetFunctionRegex;
+extern const char *NseSymbolicFunctionRegex;
+extern const char *NseMakeSymbolicFunctionName;
 
 extern const char *IfConditionBindId;
 extern const char *IfConditionVariableBindId;
@@ -43,7 +44,8 @@ DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
 StatementMatcher makeAssumeMatcher();
 StatementMatcher makeAssertMatcher();
-StatementMatcher makeNondetMatcher();
+StatementMatcher makeSymbolicMatcher();
+StatementMatcher makeMakeSymbolicMatcher();
 
 void instrumentVarDecl(
   StringRef crvClass,
@@ -238,9 +240,25 @@ private:
   tooling::Replacements *Replace;
 };
 
-class NondetReplacer : public MatchFinder::MatchCallback {
+class SymbolicReplacer : public MatchFinder::MatchCallback {
 public :
-  NondetReplacer(
+  SymbolicReplacer(
+    const std::string& NseNamespace,
+    tooling::Replacements *Replace)
+      : NseNamespace(NseNamespace),
+        Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+private:
+  const std::string& NseNamespace;
+  tooling::Replacements *Replace;
+};
+
+class MakeSymbolicReplacer : public MatchFinder::MatchCallback {
+public :
+  MakeSymbolicReplacer(
     const std::string& NseNamespace,
     tooling::Replacements *Replace)
       : NseNamespace(NseNamespace),

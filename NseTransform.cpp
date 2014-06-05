@@ -8,7 +8,8 @@
 const char *NseInternalClassName = "crv::Internal<";
 const char *NseAssumeFunctionName = "nse_assume";
 const char *NseAssertFunctionName = "nse_assert";
-const char *NseNondetFunctionRegex = "nse_nondet.*";
+const char *NseSymbolicFunctionRegex = "nse_symbolic.*";
+const char *NseMakeSymbolicFunctionName = "nse_make_symbolic";
 
 const char *IfConditionBindId = "if_condition";
 const char *IfConditionVariableBindId = "if_condition_variable";
@@ -22,7 +23,8 @@ const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
 const char *AssumeBindId = "assume";
 const char *AssertBindId = "assert";
-const char *NondetBindId = "nondet";
+const char *SymbolicBindId = "symbolic";
+const char *MakeSymbolicBindId = "make_symbolic";
 
 bool IncludesManager::handleBeginSource(CompilerInstance &CI,
   StringRef Filename) {
@@ -90,9 +92,14 @@ StatementMatcher makeAssertMatcher() {
     hasName(NseAssertFunctionName)))).bind(AssertBindId);
 }
 
-StatementMatcher makeNondetMatcher() {
+StatementMatcher makeSymbolicMatcher() {
   return callExpr(callee(functionDecl(
-    matchesName(NseNondetFunctionRegex)))).bind(NondetBindId);
+    matchesName(NseSymbolicFunctionRegex)))).bind(SymbolicBindId);
+}
+
+StatementMatcher makeMakeSymbolicMatcher() {
+  return callExpr(callee(functionDecl(hasName(
+    NseMakeSymbolicFunctionName)))).bind(MakeSymbolicBindId);
 }
 
 void instrumentControlFlow(
@@ -461,8 +468,8 @@ void AssertReplacer::run(const MatchFinder::MatchResult &Result) {
   Replace->insert(tooling::Replacement(SM, E->getRParenLoc(), 0, ")"));
 }
 
-void NondetReplacer::run(const MatchFinder::MatchResult &Result) {
-  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(NondetBindId);
+void SymbolicReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(SymbolicBindId);
   assert(E && "Bad Callback. No node provided");
 
   SourceManager &SM = *Result.SourceManager;
@@ -481,4 +488,25 @@ void NondetReplacer::run(const MatchFinder::MatchResult &Result) {
 
   const std::string NseAny = NseNamespace + "::any<";
   Replace->insert(tooling::Replacement(SM, Range, NseAny + QT.getAsString() + ">"));
+}
+
+void MakeSymbolicReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CallExpr *E = Result.Nodes.getNodeAs<CallExpr>(MakeSymbolicBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceManager &SM = *Result.SourceManager;
+  SourceLocation Loc = E->getCallee()->getExprLoc();
+
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(Loc))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(Loc) << '\n');
+    return;
+  }
+
+  SourceRange SR = E->getCallee()->getSourceRange();
+  CharSourceRange Range = Lexer::makeFileCharRange(
+      CharSourceRange::getTokenRange(SR), SM, Result.Context->getLangOpts());
+
+  const std::string NseMakeAny = NseNamespace + "::make_any";
+  Replace->insert(tooling::Replacement(SM, Range, NseMakeAny));
 }

@@ -70,7 +70,8 @@ int main(int argc, const char **argv) {
   ReturnTypeReplacer ReturnTypes(Replace);
   AssumeReplacer Assumptions(NseStrategy, Replace);
   AssertReplacer Assertions(NseStrategy, Replace);
-  NondetReplacer Nondeterminism(NamespaceOpt, Replace);
+  SymbolicReplacer Symbolics(NamespaceOpt, Replace);
+  MakeSymbolicReplacer MakeSymbolics(NamespaceOpt, Replace);
 
   MatchFinder Finder;
   Finder.addMatcher(makeIfConditionMatcher(), &IfStmts);
@@ -87,7 +88,8 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
   Finder.addMatcher(makeAssumeMatcher(), &Assumptions);
   Finder.addMatcher(makeAssertMatcher(), &Assertions);
-  Finder.addMatcher(makeNondetMatcher(), &Nondeterminism);
+  Finder.addMatcher(makeSymbolicMatcher(), &Symbolics);
+  Finder.addMatcher(makeMakeSymbolicMatcher(), &MakeSymbolics);
 
   return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM).get());
 }
