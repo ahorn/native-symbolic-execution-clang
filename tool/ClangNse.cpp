@@ -68,7 +68,6 @@ int main(int argc, const char **argv) {
 
   ParmVarReplacer ParmVarDecls(Replace);
   ReturnTypeReplacer ReturnTypes(Replace);
-  IncrementReplacer Increments(Replace);
   AssumeReplacer Assumptions(NseStrategy, Replace);
   AssertReplacer Assertions(NseStrategy, Replace);
   NondetReplacer Nondeterminism(NamespaceOpt, Replace);
@@ -86,7 +85,6 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeMainFunctionMatcher(), &MainFunction);
   Finder.addMatcher(makeParmVarDeclMatcher(), &ParmVarDecls);
   Finder.addMatcher(makeReturnTypeMatcher(), &ReturnTypes);
-  Finder.addMatcher(makeIncrementMatcher(), &Increments);
   Finder.addMatcher(makeAssumeMatcher(), &Assumptions);
   Finder.addMatcher(makeAssertMatcher(), &Assertions);
   Finder.addMatcher(makeNondetMatcher(), &Nondeterminism);

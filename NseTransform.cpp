@@ -20,7 +20,6 @@ const char *FieldBindId = "external_decl";
 const char *MainFunctionBindId = "main_function";
 const char *ParmVarBindId = "parm_var_decl";
 const char *ReturnTypeBindId = "return_type";
-const char *IncrementBindId = "post_increment";
 const char *AssumeBindId = "assume";
 const char *AssertBindId = "assert";
 const char *NondetBindId = "nondet";
@@ -79,11 +78,6 @@ DeclarationMatcher makeParmVarDeclMatcher() {
 
 DeclarationMatcher makeReturnTypeMatcher() {
   return functionDecl().bind(ReturnTypeBindId);
-}
-
-StatementMatcher makeIncrementMatcher() {
-  return unaryOperator(
-    hasOperatorName("++")).bind(IncrementBindId);
 }
 
 StatementMatcher makeAssumeMatcher() {
@@ -425,27 +419,6 @@ void ReturnTypeReplacer::run(const MatchFinder::MatchResult &Result) {
 
   instrumentVarDecl(NseInternalClassName, TL.getSourceRange(), SM,
     Result.Context->getLangOpts(), *Replace);
-}
-
-void IncrementReplacer::run(const MatchFinder::MatchResult &Result) {
-  const UnaryOperator *O = Result.Nodes.getNodeAs<UnaryOperator>(IncrementBindId);
-  assert(O && "Bad Callback. No node provided");
-
-  if (!O->isPostfix())
-    return;
-
-  SourceManager &SM = *Result.SourceManager;
-  SourceLocation LocBegin = O->getSubExpr()->getLocStart();
-  SourceLocation LocEnd = O->getOperatorLoc();
-
-  if (!Result.Context->getSourceManager().isWrittenInMainFile(LocBegin))
-  {
-    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(LocBegin) << '\n');
-    return;
-  }
-
-  Replace->insert(tooling::Replacement(SM, LocBegin, 0, "crv::post_increment("));
-  Replace->insert(tooling::Replacement(SM, LocEnd, 2, ")"));
 }
 
 void AssumeReplacer::run(const MatchFinder::MatchResult &Result) {

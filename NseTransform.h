@@ -30,7 +30,6 @@ extern const char *MainFunctionBindId;
 extern const char *FieldBindId;
 extern const char *ParmVarBindId;
 extern const char *ReturnTypeBindId;
-extern const char *IncrementBindId;
 
 StatementMatcher makeIfConditionMatcher();
 StatementMatcher makeIfConditionVariableMatcher();
@@ -42,7 +41,6 @@ DeclarationMatcher makeFieldMatcher();
 DeclarationMatcher makeMainFunctionMatcher();
 DeclarationMatcher makeParmVarDeclMatcher();
 DeclarationMatcher makeReturnTypeMatcher();
-StatementMatcher makeIncrementMatcher();
 StatementMatcher makeAssumeMatcher();
 StatementMatcher makeAssertMatcher();
 StatementMatcher makeNondetMatcher();
@@ -199,18 +197,6 @@ private:
 class ReturnTypeReplacer : public MatchFinder::MatchCallback {
 public :
   ReturnTypeReplacer(tooling::Replacements *Replace)
-      : Replace(Replace) {}
-
-  virtual void run(const MatchFinder::MatchResult &Result)
-      override;
-
-private:
-  tooling::Replacements *Replace;
-};
-
-class IncrementReplacer : public MatchFinder::MatchCallback {
-public :
-  IncrementReplacer(tooling::Replacements *Replace)
       : Replace(Replace) {}
 
   virtual void run(const MatchFinder::MatchResult &Result)
