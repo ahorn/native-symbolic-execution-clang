@@ -279,7 +279,7 @@ void GlobalVarReplacer::run(const MatchFinder::MatchResult &Result) {
     return;
   }
 
-  GlobalVars.push_back(V->getName().str());
+  GlobalVars.push_back(V);
 
   TypeLoc TL = V->getTypeSourceInfo()->getTypeLoc();
   if (V->getType()->isArrayType())
@@ -335,15 +335,20 @@ void MainFunctionReplacer::run(const MatchFinder::MatchResult &Result) {
   DEBUG(llvm::errs() << "MainFunctionReplacer: " << GlobalVars->size()
                      << " global variables" << "\n");
 
-  const std::string NseMakeAny = "  " + NseNamespace + "::make_any(";
+  const std::string NseMakeZero = "  " + NseNamespace + "::make_zero(";
   Stmt *FuncBody = D->getBody();
   SourceLocation BodyLocBegin = FuncBody->getLocStart().getLocWithOffset(1);
-  std::string MakeAnys = "\n";
-  for (const std::string& GlobalVar : *GlobalVars)
-  {
-    MakeAnys += NseMakeAny + GlobalVar + ");\n";
+  std::string MakeInits = "\n";
+  for (const VarDecl * V : *GlobalVars) {
+    if (V->hasInit()) {
+      APValue* APV = V->evaluateValue();
+      assert(APV);
+      MakeInits += "  " + V->getName().str() + " = " + APV->getAsString(*Result.Context, V->getType()) + ";\n";
+    } else {
+      MakeInits += NseMakeZero + V->getName().str() + ");\n";
+    }
   }
-  Replace->insert(tooling::Replacement(SM, BodyLocBegin, 0, MakeAnys));
+  Replace->insert(tooling::Replacement(SM, BodyLocBegin, 0, MakeInits));
 
   const std::string NseStrategy = NseNamespace + "::" + Strategy + "()";
   SourceLocation BodyEndLoc = FuncBody->getLocEnd().getLocWithOffset(1);

@@ -139,7 +139,7 @@ public :
   virtual void run(const MatchFinder::MatchResult &Result)
       override;
 
-  std::vector<std::string> GlobalVars;
+  std::vector<const VarDecl *> GlobalVars;
 
 private:
   tooling::Replacements *Replace;
@@ -163,7 +163,7 @@ public :
     const std::string& NseNamespace,
     const std::string& Strategy,
     tooling::Replacements *Replace,
-    std::vector<std::string> *GlobalVars,
+    std::vector<const VarDecl *> *GlobalVars,
     IncludesManager* IM)
       : NseNamespace(NseNamespace),
         Strategy(Strategy),
@@ -178,7 +178,7 @@ private:
   const std::string& NseNamespace;
   const std::string& Strategy;
   tooling::Replacements *Replace;
-  std::vector<std::string> *GlobalVars;
+  std::vector<const VarDecl *> *GlobalVars;
   IncludesManager* IM;
 };
 
