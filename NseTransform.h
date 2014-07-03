@@ -53,6 +53,15 @@ void instrumentVarDecl(
   SourceManager &SM,
   tooling::Replacements &R);
 
+void instrumentNamedVarDecl(
+  StringRef NseClassPrefix,
+  StringRef TypeName,
+  StringRef VariableName,
+  SourceRange SR,
+  SourceManager &SM,
+  const LangOptions &LO,
+  tooling::Replacements &Replace);
+
 struct IncludesManager : public tooling::SourceFileCallbacks {
   IncludesManager()
       : Includes(0) {}
