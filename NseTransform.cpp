@@ -25,6 +25,7 @@ const char *AssumeBindId = "assume";
 const char *AssertBindId = "assert";
 const char *SymbolicBindId = "symbolic";
 const char *MakeSymbolicBindId = "make_symbolic";
+const char *CStyleCastBindId = "c_style_cast";
 
 bool IncludesManager::handleBeginSource(CompilerInstance &CI,
   StringRef Filename) {
@@ -100,6 +101,10 @@ StatementMatcher makeSymbolicMatcher() {
 StatementMatcher makeMakeSymbolicMatcher() {
   return callExpr(callee(functionDecl(hasName(
     NseMakeSymbolicFunctionName)))).bind(MakeSymbolicBindId);
+}
+
+StatementMatcher makeCStyleCastMatcher() {
+  return cStyleCastExpr().bind(CStyleCastBindId);
 }
 
 void instrumentControlFlow(
@@ -509,4 +514,31 @@ void MakeSymbolicReplacer::run(const MatchFinder::MatchResult &Result) {
 
   const std::string NseMakeAny = NseNamespace + "::make_any";
   Replace->insert(tooling::Replacement(SM, Range, NseMakeAny));
+}
+
+void CStyleCastReplacer::run(const MatchFinder::MatchResult &Result) {
+  const CStyleCastExpr *E = Result.Nodes.getNodeAs<CStyleCastExpr>(CStyleCastBindId);
+  assert(E && "Bad Callback. No node provided");
+
+  SourceManager &SM = *Result.SourceManager;
+  if (!Result.Context->getSourceManager().isWrittenInMainFile(E->getLocStart()))
+  {
+    DEBUG(llvm::errs() << "Ignore file: " << SM.getFilename(E->getLocStart()) << '\n');
+    return;
+  }
+
+  CharSourceRange CR;
+  CR.setBegin(E->getLocStart());
+  CR.setEnd(E->getLocEnd());
+
+  Replace->insert(tooling::Replacement(SM, CR, NseInternalClassName +
+    E->getTypeAsWritten().getAsString()));
+
+  SourceRange SR = E->getSubExpr()->getSourceRange();
+
+  CharSourceRange Range = Lexer::makeFileCharRange(
+      CharSourceRange::getTokenRange(SR), SM, Result.Context->getLangOpts());
+
+  Replace->insert(tooling::Replacement(SM, Range.getBegin(), 0, ">::cast("));
+  Replace->insert(tooling::Replacement(SM, Range.getEnd(), 0, ")"));
 }

@@ -72,6 +72,7 @@ int main(int argc, const char **argv) {
   AssertReplacer Assertions(NseStrategy, Replace);
   SymbolicReplacer Symbolics(NamespaceOpt, Replace);
   MakeSymbolicReplacer MakeSymbolics(NamespaceOpt, Replace);
+  CStyleCastReplacer CStyleCasts(NamespaceOpt, Replace);
 
   MatchFinder Finder;
   Finder.addMatcher(makeIfConditionMatcher(), &IfStmts);
@@ -90,6 +91,7 @@ int main(int argc, const char **argv) {
   Finder.addMatcher(makeAssertMatcher(), &Assertions);
   Finder.addMatcher(makeSymbolicMatcher(), &Symbolics);
   Finder.addMatcher(makeMakeSymbolicMatcher(), &MakeSymbolics);
+  Finder.addMatcher(makeCStyleCastMatcher(), &CStyleCasts);
 
   return Tool.runAndSave(tooling::newFrontendActionFactory(&Finder, &IM).get());
 }

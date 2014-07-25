@@ -31,6 +31,7 @@ extern const char *MainFunctionBindId;
 extern const char *FieldBindId;
 extern const char *ParmVarBindId;
 extern const char *ReturnTypeBindId;
+extern const char *CStyleCastBindId;
 
 StatementMatcher makeIfConditionMatcher();
 StatementMatcher makeIfConditionVariableMatcher();
@@ -46,6 +47,7 @@ StatementMatcher makeAssumeMatcher();
 StatementMatcher makeAssertMatcher();
 StatementMatcher makeSymbolicMatcher();
 StatementMatcher makeMakeSymbolicMatcher();
+StatementMatcher makeCStyleCastMatcher();
 
 void instrumentVarDecl(
   StringRef crvClass,
@@ -268,6 +270,22 @@ private:
 class MakeSymbolicReplacer : public MatchFinder::MatchCallback {
 public :
   MakeSymbolicReplacer(
+    const std::string& NseNamespace,
+    tooling::Replacements *Replace)
+      : NseNamespace(NseNamespace),
+        Replace(Replace) {}
+
+  virtual void run(const MatchFinder::MatchResult &Result)
+      override;
+
+private:
+  const std::string& NseNamespace;
+  tooling::Replacements *Replace;
+};
+
+class CStyleCastReplacer : public MatchFinder::MatchCallback {
+public :
+  CStyleCastReplacer(
     const std::string& NseNamespace,
     tooling::Replacements *Replace)
       : NseNamespace(NseNamespace),
